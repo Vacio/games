@@ -76,7 +76,7 @@
 		
 		// *** Phaser ***
         function preload () {
-			loadImages();
+			loadAllSprites();
 			
             window.addEventListener('resize', function(event){resizeGame();});
             var resizeGame = function () { game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;  game.scale.updateLayout();}
@@ -394,45 +394,33 @@
 			}
 		}
 
-		function loadImages() {
-			// Is Phaser smart enough to know that an image has already been loaded?
-			// Will calling this function be cost efficient?
+		function loadAllSprites() {
+			game.load.image('controlPanel',PATH_TO_ASSETS+'Items/ControlPanelcrop.png');
+			game.load.image('background', 'assets/Background/ShipInterior.png');
+			game.load.spritesheet('button',PATH_TO_ASSETS+'Items/Button_sheet.png',288,288,2);
 		
-			switch (activity) {
-				case PACK_MOONROCKS:	
-					game.load.image('controlPanel',PATH_TO_ASSETS+'Items/ControlPanelcrop.png');
-					game.load.image('background', 'assets/Background/ShipInterior.png');
-					game.load.spritesheet('button',PATH_TO_ASSETS+'Items/Button_sheet.png',288,288,2);
-				
-					game.load.spritesheet('box',PATH_TO_ASSETS+'Items/Box_sheet.png',881,730,2);
-					game.load.spritesheet('moonrock1',PATH_TO_ASSETS+'Items/Rocks/Moonrock1_sheet.png',610,400,2);
-					game.load.spritesheet('moonrock2',PATH_TO_ASSETS+'Items/Rocks/Moonrock2_sheet.png',460,360,2);
-					game.load.spritesheet('moonrock3',PATH_TO_ASSETS+'Items/Rocks/Moonrock3_sheet.png',660,360,2);
-					game.load.spritesheet('moonrock4',PATH_TO_ASSETS+'Items/Rocks/Moonrock4_sheet.png',510,410,2);
-					game.load.spritesheet('moonrock5',PATH_TO_ASSETS+'Items/Rocks/Moonrock5_sheet.png',660,360,2);
-					break;
-				case CHARGE_SPACESHIP:
-					game.load.image('controlPanel',PATH_TO_ASSETS+'Items/ControlPanelcrop.png');
-					game.load.image('background', 'assets/Background/ShipInterior.png');
-					game.load.spritesheet('button',PATH_TO_ASSETS+'Items/Button_sheet.png',288,288,2);
-				
-					game.load.spritesheet('battery',PATH_TO_ASSETS+'Items/Battery_sheet.png',560,810,2);
-					game.load.spritesheet('crystal1',PATH_TO_ASSETS+'Items/Crystals/Crystal1_sheet.png',460,560,2);
-					game.load.spritesheet('crystal2',PATH_TO_ASSETS+'Items/Crystals/Crystal2_sheet.png',460,510,2);
-					game.load.spritesheet('crystal3',PATH_TO_ASSETS+'Items/Crystals/Crystal3_sheet.png',410,460,2);
-					game.load.spritesheet('crystal4',PATH_TO_ASSETS+'Items/Crystals/Crystal4_sheet.png',460,410,2);
-					game.load.spritesheet('crystal5',PATH_TO_ASSETS+'Items/Crystals/Crystal5_sheet.png',410,360,2);
-					break;
-				default:
-					window.alert("incorrect activity selection");
-					return;
-			}
+			game.load.spritesheet('box',PATH_TO_ASSETS+'Items/Box_sheet.png',881,730,2);
+			game.load.spritesheet('battery',PATH_TO_ASSETS+'Items/Battery_sheet.png',560,810,2);
+			
+			game.load.spritesheet('moonrock1',PATH_TO_ASSETS+'Items/Rocks/Moonrock1_sheet.png',610,400,2);
+			game.load.spritesheet('moonrock2',PATH_TO_ASSETS+'Items/Rocks/Moonrock2_sheet.png',460,360,2);
+			game.load.spritesheet('moonrock3',PATH_TO_ASSETS+'Items/Rocks/Moonrock3_sheet.png',660,360,2);
+			game.load.spritesheet('moonrock4',PATH_TO_ASSETS+'Items/Rocks/Moonrock4_sheet.png',510,410,2);
+			game.load.spritesheet('moonrock5',PATH_TO_ASSETS+'Items/Rocks/Moonrock5_sheet.png',660,360,2);
+
+			game.load.spritesheet('crystal1',PATH_TO_ASSETS+'Items/Crystals/Crystal1_sheet.png',460,560,2);
+			game.load.spritesheet('crystal2',PATH_TO_ASSETS+'Items/Crystals/Crystal2_sheet.png',460,510,2);
+			game.load.spritesheet('crystal3',PATH_TO_ASSETS+'Items/Crystals/Crystal3_sheet.png',410,460,2);
+			game.load.spritesheet('crystal4',PATH_TO_ASSETS+'Items/Crystals/Crystal4_sheet.png',460,410,2);
+			game.load.spritesheet('crystal5',PATH_TO_ASSETS+'Items/Crystals/Crystal5_sheet.png',410,360,2);
+			
+			
 		}
 		
 		function changeSprites(){
 			switch(activity){
 				case PACK_MOONROCKS:
-					box.loadTexture('b', 0, false);
+					//box.loadTexture('b', 0, false);
 					
 					break;
 				case CHARGE_SPACESHIP:
@@ -449,14 +437,23 @@
 					
 					// battery tray
 					box.loadTexture('battery');
-					box.anchor.setTo(0.5,0.5);
+					box.visible = true;
+					//box = game.add.sprite(0,0, 'battery');
+					box.frame = 0;
+					//box.anchor.setTo(0.5,0.5);
 					box.scale.setTo(0.8*sx,0.85*sy);
 					box.x = controlPanel.x + controlPanel.width - battery.width - 200*sx;
 					box.y = controlPanel.y + controlPanel.height/2 - battery.height/2;
 					box.inputEnabled=true;
-					box.visible = true;
-					box.alive = true;
-					box.exist = true;
+					//box.alive = true;
+					//box.exist = true;
+					
+					//box.scale.setTo(0.6*sx,0.8*sy);
+					//box.x = controlPanel.x + controlPanel.width - box.width - 130*sx;
+					//box.y = controlPanel.y + 80*sx;
+					//box.inputEnabled=true;
+					
+					
 					
 					// rectangle where the target number is displayed
 					goal = game.add.sprite(0,0,'box');
@@ -484,6 +481,7 @@
 			//onPanel.destroy(true,true);/////
 			onPanel.removeAll(true,true,false);//ttt?? to delete the texture
 			onBox.removeAll(true,true,false);//ttt?? to delete the texture
+			//box.visible = false;
 			box.kill();
 			controlPanel.kill();
 			button.kill();
@@ -500,14 +498,14 @@
 		
 		function changeActivity(){
 			clearActivity();
-		
+			
 			switch(activity){
 				case PACK_MOONROCKS:
 				
 					break;
 				case CHARGE_SPACESHIP:
 					target = game.rnd.integerInRange(1,10);
-					loadImages();
+					loadAllSprites();
 					changeSprites();
 					
 					break;
