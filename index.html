@@ -24,6 +24,12 @@
     const COLUMNS_BOX = 3;
 	const PATH_TO_ASSETS='assets/';
 	const GAME1ACTIVITIES = 6;
+	const PACK_MOONROCKS = 1;
+	const CHARGE_SPACESHIP = 2; // app5.html
+	const SELECT_GALAXY = 3;
+	const SELECT_PLANET = 4;
+	const FEED_SPACE_PETS = 5; // app2.html
+	const BOARD_SPACE_PETS = 1; // game 2, activity 1
 
     window.onload = function() {
     	var activity = 1;
@@ -149,26 +155,27 @@
 		// *** Our Functions ***
         function boxCoordinates() {
 			switch (activity) {
-				case 1:
+				case PACK_MOONROCKS:
 					for (var i = 0; i < ROCK_AMOUNT; i++)
 					{
 						boxCoordX[i] = controlPanel.x + 960*sx + i%3*150*sx;
 						boxCoordY[i] = controlPanel.y + 160*sy + Math.floor(i/COLUMNS_BOX)*100*sy;
 					}
 					break;
-				case 5:
+				case CHARGE_SPACESHIP:
 					break;
 				default:
 			}
 		}
 
         function outOfBox(sprite){
-			//switch case one 'box' case 5 'battery'?? Probably yes since there will be other activites
+			//switch case one 'box' case CHARGE_SPACESHIP 'battery'?? Probably yes since there will be other activites
             sprite.loadTexture('box');
         }
 
         function onButtonPress(sprite,pointer){
 			//switch?? maybe, I don't know if needed for each activity
+			
             sprite.frame=1;
             stat = countRocks();
             if (!stat[0]) attempts++;
@@ -208,14 +215,14 @@
             }
             robot_command.publish(do_complete);
 			
-			//for quick debugging
-			if (count==0){
+			
+			if (count==0){//for quick debugging
 			//if (count==target){
 				alert("changing activity");
 				//activity++;
-				activity = 5;
+				activity = CHARGE_SPACESHIP;
 				if (activity > GAME1ACTIVITIES){
-					activity = 1;
+					activity = PACK_MOONROCKS;
 				}
 				changeActivity(); 
 			}
@@ -312,7 +319,7 @@
 		
 		function makePictures(){
 			switch(activity){
-				case 1:
+				case PACK_MOONROCKS:
 					// background image is displayed
 					background = game.add.sprite(game.world.centerX, game.world.centerY, 'background');
 					//  Moves the image anchor to the middle, so it centers inside the game properly
@@ -360,7 +367,7 @@
 						onPanel.create(panelCoordX[i], panelCoordY[i], objectname);
 					}
 					break;
-				case 5:
+				case CHARGE_SPACESHIP:
 					break;
 				default:
 			}
@@ -368,7 +375,7 @@
 		
 		function addPropertiesToObjects(){
 			switch (activity) {
-				case 1:
+				case PACK_MOONROCKS:
 					onPanel.forEach(function(object){
 						object.anchor.setTo(0.5,0.5);
 						object.frame=0;
@@ -382,7 +389,7 @@
 						object.events.onDragUpdate.add(onDragUpdate,this);
 					});
 					break;
-				case 5:
+				case CHARGE_SPACESHIP:
 					break;
 			}
 		}
@@ -392,7 +399,7 @@
 			// Will calling this function be cost efficient?
 		
 			switch (activity) {
-				case 1:	
+				case PACK_MOONROCKS:	
 					game.load.image('controlPanel',PATH_TO_ASSETS+'Items/ControlPanelcrop.png');
 					game.load.image('background', 'assets/Background/ShipInterior.png');
 					game.load.spritesheet('button',PATH_TO_ASSETS+'Items/Button_sheet.png',288,288,2);
@@ -404,7 +411,7 @@
 					game.load.spritesheet('moonrock4',PATH_TO_ASSETS+'Items/Rocks/Moonrock4_sheet.png',510,410,2);
 					game.load.spritesheet('moonrock5',PATH_TO_ASSETS+'Items/Rocks/Moonrock5_sheet.png',660,360,2);
 					break;
-				case 5:
+				case CHARGE_SPACESHIP:
 					game.load.image('controlPanel',PATH_TO_ASSETS+'Items/ControlPanelcrop.png');
 					game.load.image('background', 'assets/Background/ShipInterior.png');
 					game.load.spritesheet('button',PATH_TO_ASSETS+'Items/Button_sheet.png',288,288,2);
@@ -421,14 +428,14 @@
 					return;
 			}
 		}
-        
+		
 		function changeSprites(){
 			switch(activity){
-				case 1:
+				case PACK_MOONROCKS:
 					box.loadTexture('b', 0, false);
 					
 					break;
-				case 5:
+				case CHARGE_SPACESHIP:
 					background.loadTexture('background');
 					background.anchor.setTo(0.5,0.5);
 					background.x = game.world.centerX;
@@ -438,8 +445,26 @@
 					controlPanel.scale.setTo(0.95*sx,0.95*sy);
 					controlPanel.x = game.world.centerX - controlPanel.width/2;
 					controlPanel.y = game.world.centerY - controlPanel.height/2;
+					controlPanel.visible = true;
 					
+					// battery tray
 					box.loadTexture('battery');
+					box.anchor.setTo(0.5,0.5);
+					box.scale.setTo(0.8*sx,0.85*sy);
+					box.x = controlPanel.x + controlPanel.width - battery.width - 200*sx;
+					box.y = controlPanel.y + controlPanel.height/2 - battery.height/2;
+					box.inputEnabled=true;
+					box.visible = true;
+					box.alive = true;
+					box.exist = true;
+					
+					// rectangle where the target number is displayed
+					goal = game.add.sprite(0,0,'box');
+					goal.frame = 1;
+					goal.scale.setTo(0.2*sx,0.25*sy);
+					goal.x = controlPanel.x + controlPanel.width/2 - box.width/2;
+					goal.y = controlPanel.y + controlPanel.height/5 - box.height/2;
+
 					
 					button.loadTexture('button');
 					
@@ -477,20 +502,13 @@
 			clearActivity();
 		
 			switch(activity){
-				case 1:
+				case PACK_MOONROCKS:
 				
 					break;
-				case 5:
-					loadImages();
-					
-					// ### onButtonPress needs switch cases for activity
-					// change sprites
-					// new target amount
-					
+				case CHARGE_SPACESHIP:
 					target = game.rnd.integerInRange(1,10);
-					
+					loadImages();
 					changeSprites();
-					
 					
 					break;
 				default:
