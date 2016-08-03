@@ -3,10 +3,11 @@
     <head>
         <meta charset="UTF-8" />
         <title>Expeditions: Move by amount!</title>
-        <script src="//cdn.jsdelivr.net/phaser/2.4.8/phaser.min.js"></script>
+        <script src="//cdn.jsdelivr.net/phaser/2.5.0/phaser.min.js"></script>
         <script type="text/javascript" src="http://cdn.robotwebtools.org/EventEmitter2/current/eventemitter2.min.js"></script>
         <script type="text/javascript" src="http://cdn.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
-        <style>
+        <script src="angular.min.js"></script>
+		<style>
         body{
             width: 100%;
             height: 100%;
@@ -15,26 +16,43 @@
         }
         </style>
     </head>
-    <body>
-
-    <script type="text/javascript">
+    <body ng-app>    
+	<script type="text/javascript">
+    
+    const ROCK_AMOUNT = 10;
+    const COLUMNS_PANEL = 4;
+    const COLUMNS_BOX = 3;
+	const PATH_TO_ASSETS='assets/';
+	const GAME1ACTIVITIES = 6;
 
     window.onload = function() {
+    	var activity = 1;
         var gameWidth = 1920;
         var gameHeight = 1080;
-        var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '', { preload: preload, create: create});
-        var objects;
-        var box;
+        var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '', { preload: preload, create: create,  render:render });
+		var onPanel;
+		var onBox;
+        var box; // where objects are places to reach target
+		var goal; // a box where the target is displayed
+		var background;
+		var button;
+		var controlPanel;
         var count=0;
         var scoreText;
         var promptText;
-        var target,attempts=1,stat=false;
+        var target = game.rnd.integerInRange(1,10); // Number of objects needed to be in box randomly generated
+		var attempts=1,stat=false;
         var sx = window.innerWidth/gameWidth;
         var sy = window.innerHeight/gameHeight;
+        var boxCoordX = new Array();
+        var boxCoordY = new Array();
+        var panelCoordX = new Array();
+        var panelCoordY = new Array();
 
-        // Initializing ROS variables
+		// *** ROS ***
         var ros = new ROSLIB.Ros({
-            url : 'ws://'+location.hostname+':9090'
+            //url : 'ws://localhost:9090'
+            url : 'ws://192.168.7.191:9090'
         });
 
         var activity_status = new ROSLIB.Topic({
@@ -49,163 +67,14 @@
             messageType : 'sar_robot_command_msgs/RobotCommand' 
         });
 
+		
+		// *** Phaser ***
         function preload () {
-            //This game is being built for a device with screen resolution of 1920x1080
-            //Effort is to ensure proper scaling down on all sprites etc.
-
-            var path_to_assets='assets/';
-            game.load.image('logo', 'assets/Background/ShipInterior.png');
-            game.load.image('controlPanel',path_to_assets+'Items/ControlPanelcrop.png');
-
-            game.load.spritesheet('object1',path_to_assets+'Items/Rocks/Moonrock1_sheet.png',610,400,2);
-            game.load.spritesheet('object2',path_to_assets+'Items/Rocks/Moonrock2_sheet.png',460,360,2);
-            game.load.spritesheet('object3',path_to_assets+'Items/Rocks/Moonrock3_sheet.png',660,360,2);
-            game.load.spritesheet('object4',path_to_assets+'Items/Rocks/Moonrock4_sheet.png',510,410,2);
-            game.load.spritesheet('object5',path_to_assets+'Items/Rocks/Moonrock5_sheet.png',660,360,2);
-            game.load.spritesheet('button',path_to_assets+'Items/Button_sheet.png',288,288,2);
-            game.load.spritesheet('box',path_to_assets+'Items/Box_sheet.png',881,730,2);
-
+			loadImages();
+			
             window.addEventListener('resize', function(event){resizeGame();});
             var resizeGame = function () { game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;  game.scale.updateLayout();}
 
-            target = game.rnd.integerInRange(1,10);
-
-            ros_initialize();
-            ros_activityStart();
-        }
-
-        function create () {
-
-            var logo = game.add.sprite(game.world.centerX, game.world.centerY, 'logo');
-            logo.anchor.setTo(0.5, 0.5);
-            console.log('Game width is'+game.width);
-            console.log('Game height is'+game.height);
-
-            var controlPanel = game.add.sprite(0,0,'controlPanel');
-            controlPanel.scale.setTo(0.8*sx,0.8*sy);
-            controlPanel.x = game.world.centerX - controlPanel.width/2;
-            controlPanel.y = game.world.centerY - controlPanel.height/2;
-
-            var button = game.add.sprite(controlPanel.x+controlPanel.width/2,controlPanel.y+controlPanel.height-200,'button');
-            button.scale.setTo(0.3);
-            button.x = controlPanel.x+controlPanel.width/2-button.width/2;
-            button.y = controlPanel.y+controlPanel.height-button.height-0.05*game.height;
-            button.frame=0;
-            button.inputEnabled=true;
-            button.events.onInputDown.add(onButtonPress,this);
-            button.events.onInputUp.add(onButtonRelease,this);
-
-            box = game.add.sprite(0,0, 'box');
-            box.scale.setTo(0.6*sx,0.8*sy);
-            box.x = controlPanel.x + controlPanel.width - box.width - 130*sx;
-            box.y = controlPanel.y + 80*sx;
-            box.inputEnabled=true;
-            box.frame = 0;
-
-            console.log('Box height is'+box.height);
-            console.log('Box width is'+box.width);
-
-            console.log('cp width and height are'+controlPanel.width+'x'+controlPanel.height);
-
-            objects=game.add.group();
-            var arr = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14];
-            arr = shuffle(arr);
-            for (var i=0;i<=9;i++){
-                objectname = "object" + game.rnd.integerInRange(1,5);
-                var object = objects.create(controlPanel.x+220*sx+(arr[i]%4)*150*sx,controlPanel.y+130*sy+Math.floor(arr[i]/4)*150*sy,objectname);
-            }
-
-            objects.forEach(function(object){
-                object.anchor.setTo(0.5,0.5);
-                object.frame=0;
-                object.scale.setTo(0.25*sx);
-                object.inputEnabled=true;
-                object.input.enableDrag(false,false,false,255,null,controlPanel);
-                object.events.onDragStart.add(onDragStart,this);
-                object.events.onDragStop.add(onDragStop,this);
-                object.events.onDragUpdate.add(onDragUpdate,this);
-                //object.input.enableSnap(100,100,false,true);
-            });
-
-            scoreText = game.add.text(game.width/2,0.1*game.height,'Count: 0',{fontSize:'24px',fill:'#000'});
-            scoreText.x=game.width/2-scoreText.width/2;
-
-            promptText = game.add.text(game.width/2,0.03*game.height,'Please move moonrocks into the box',{fontSize:'24px',fill:'#fff'});
-            promptText.x = game.width/2-promptText.width/2;
-            var question = 'Please move ' + target + ' moonrocks into the box';
-            promptText.setText(question);
-
-        }
-
-        function outOfBox(sprite){
-            sprite.loadTexture('box');
-        }
-
-        function onButtonPress(sprite,pointer){
-            sprite.frame=1;
-            stat = countRocks();
-            if (!stat[0]) attempts++;
-            ros_activityComplete();            
-        }
-
-        function onButtonRelease(sprite,pointer){
-            sprite.frame=0;
-        }
-
-        function onDragStart(sprite,pointer){
-            sprite.frame=1;
-        }
-
-        function onDragStop(sprite,pointer){
-            sprite.frame=0;
-            box.frame = 0;
-        }
-
-        function onDragUpdate(sprite,pointer){
-            if (isInside(sprite)) box.frame = 1;
-            else if (!isInside(sprite)) box.frame = 0;
-        }
-
-        function render(){
-        
-        }
-
-        function isInside(object){
-            if (object.x>box.x+0.01*game.width && object.y>box.y+0.01*game.height && object.x<box.x+box.width-0.01*game.width && object.y<box.y+box.height-0.01*game.height) return true;
-            else return false;
-        }
-
-        function countRocks(){
-            count = 0;
-            objects.forEach(function(object){
-                if (isInside(object)){
-                    console.log("Dropped inside the box!");
-                    count++;
-                }
-            });
-            scoreText.setText('Count: '+count);
-            if (count==target){return [true, ""];}
-            else return [false,(count<target)?"less":"more"];
-        }
-
-        function reset(){
-
-        }
-
-        function shuffle(array) {
-            //Using the Fisher-Yates (Knuth) Shuffle algorithm
-            var currentIndex = array.length, temporaryValue, randomIndex;
-            while (0 !== currentIndex) {
-                randomIndex = Math.floor(Math.random() * currentIndex);
-                currentIndex -= 1;
-                temporaryValue = array[currentIndex];
-                array[currentIndex] = array[randomIndex];
-                array[randomIndex] = temporaryValue;
-            }
-            return array;
-        }
-
-        function ros_initialize(){
             ros.on('connection', function() {
                 console.log('Connected to websocket server.');
             });
@@ -217,9 +86,7 @@
             ros.on('close', function() {
                 console.log('Connection to websocket server closed.');
             });
-        }
 
-        function ros_activityStart(){
             var log_start = new ROSLIB.Message({
                 header: {
                     frame_id: '0'
@@ -245,8 +112,67 @@
             do_start.properties = 'Put '+target+' moon rocks into the box.';
             robot_command.publish(do_start);
         }
+		
+        function create () {
+		
+			makePictures();
+			
+			boxCoordinates();
 
-        function ros_activityComplete(){
+			addPropertiesToObjects();
+		
+            scoreText = game.add.text(game.width/2,0.1*game.height,'Count: 0',{fontSize:'24px',fill:'#000'});
+            scoreText.x=game.width/2-scoreText.width/2;
+
+            promptText = game.add.text(game.width/2,0.03*game.height,'Please move moonrocks into the box',{fontSize:'24px',fill:'#fff'});
+            promptText.x = game.width/2-promptText.width/2;
+            var question = 'Please move ' + target + ' moonrocks into the box';
+            promptText.setText(question);
+
+
+        }
+		
+		function update(){
+
+		}
+
+		function render(){
+			//game.debug.spriteBounds(button);
+    		//game.debug.spriteCorners(button, true, true);
+			//game.debug.inputInfo(32, 32);
+    		
+    		//game.debug.pointer( game.input.activePointer );
+			//game.debug.spriteInputInfo(box, 32, 130);
+        }
+		
+		
+		// *** Our Functions ***
+        function boxCoordinates() {
+			switch (activity) {
+				case 1:
+					for (var i = 0; i < ROCK_AMOUNT; i++)
+					{
+						boxCoordX[i] = controlPanel.x + 960*sx + i%3*150*sx;
+						boxCoordY[i] = controlPanel.y + 160*sy + Math.floor(i/COLUMNS_BOX)*100*sy;
+					}
+					break;
+				case 5:
+					break;
+				default:
+			}
+		}
+
+        function outOfBox(sprite){
+			//switch case one 'box' case 5 'battery'?? Probably yes since there will be other activites
+            sprite.loadTexture('box');
+        }
+
+        function onButtonPress(sprite,pointer){
+			//switch?? maybe, I don't know if needed for each activity
+            sprite.frame=1;
+            stat = countRocks();
+            if (!stat[0]) attempts++;
+
             var log_complete = new ROSLIB.Message({
                 header: {
                     frame_id: '1'
@@ -281,10 +207,298 @@
                 }
             }
             robot_command.publish(do_complete);
+			
+			//for quick debugging
+			if (count==0){
+			//if (count==target){
+				alert("changing activity");
+				//activity++;
+				activity = 5;
+				if (activity > GAME1ACTIVITIES){
+					activity = 1;
+				}
+				changeActivity(); 
+			}
         }
+
+        function onButtonRelease(sprite,pointer){
+			//switch?? Perhaps
+            sprite.frame=0;
+        }
+
+        function onDragStart(sprite,pointer){
+			//switch?? Probably not
+            sprite.frame=1;
+        }
+
+        function onDragStop(sprite,pointer){
+			//switch!!
+            sprite.frame=0;
+            box.frame = 0;
+            			
+			if (isInside(sprite) && onPanel.removeChild(sprite))
+			{
+				onBox.add(sprite);
+			}
+			else if (!isInside(sprite) && onBox.removeChild(sprite))
+			{
+				onPanel.add(sprite);
+			}
+			console.log("onPanel.total: " + onPanel.total + " onBox.total: " + onBox.total);
+		
+			//Reorders the rocks on the Panel
+			for (var i = 0; i < onPanel.total; i++)
+			{
+				onPanel.getChildAt(i).x = panelCoordX[i];
+				onPanel.getChildAt(i).y = panelCoordY[i];
+			}
+			
+			//Reorders the rocks on the Box
+			for (var i = 0; i < onBox.total; i++)
+			{
+				onBox.getChildAt(i).x = boxCoordX[i];
+				onBox.getChildAt(i).y = boxCoordY[i];
+			}
+        }
+
+        function onDragUpdate(sprite,pointer){
+			// switch??
+            if (isInside(sprite)) box.frame = 1;
+            else if (!isInside(sprite)){
+				box.frame = 0;	
+			}
+        }
+
+        function isInside(object){
+			// switch!!
+            if (object.x > box.x+0.01*game.width && object.y > (box.y +0.01*game.height) && object.x < box.x+box.width-0.01*game.width && object.y < box.y+box.height-0.01*game.height) return true;
+            else return false;
+        }
+
+        function countRocks(){
+            count = onBox.total;
+            //console.log("Count in box! : " + onBox.total);
+            
+            scoreText.setText('Count: '+count);
+            
+			//for quick debugging
+			//if (count==0){
+			if (count==target){
+				//return [true, ""];
+				alert('Well done!'); 				
+				return true;
+			}
+			else {
+				return [false,(count<target)?"less":"more"];
+			}
+        }
+
+		function reset(){
+	   
+        }
+
+        function shuffle(array) {
+            //Using the Fisher-Yates (Knuth) Shuffle algorithm
+            var currentIndex = array.length, temporaryValue, randomIndex;
+            while (0 !== currentIndex) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex -= 1;
+                temporaryValue = array[currentIndex];
+                array[currentIndex] = array[randomIndex];
+                array[randomIndex] = temporaryValue;
+            }
+            return array;
+        }
+		
+		function makePictures(){
+			switch(activity){
+				case 1:
+					// background image is displayed
+					background = game.add.sprite(game.world.centerX, game.world.centerY, 'background');
+					//  Moves the image anchor to the middle, so it centers inside the game properly
+					background.anchor.setTo(0.5, 0.5);
+					//console.log('Game width is'+ game.width);
+					//console.log('Game height is'+ game.height);
+
+					// controlPanel where moonrock located image is created on screen
+					controlPanel = game.add.sprite(0,0,'controlPanel');
+					controlPanel.scale.setTo(0.8*sx,0.8*sy);
+					controlPanel.x = game.world.centerX - controlPanel.width/2;
+					controlPanel.y = game.world.centerY - controlPanel.height/2;
+					//console.log('cp width and height are '+controlPanel.width+'x'+controlPanel.height);
+
+					// button image is loaded
+					button = game.add.sprite(controlPanel.x+controlPanel.width/2,controlPanel.y+controlPanel.height-200,'button');
+					button.scale.setTo(0.3);
+					button.x = controlPanel.x+controlPanel.width/2-button.width/2;
+					button.y = controlPanel.y+controlPanel.height-button.height-0.05*game.height;
+					button.frame=0;// button frame 
+					button.inputEnabled=true;// Enables all kind of input actions on this image (click, etc)
+					// The onButtonPress function
+					button.events.onInputDown.add(onButtonPress,this);
+					button.events.onInputUp.add(onButtonRelease,this);
+					
+					// box where moonrocks are moved to
+					box = game.add.sprite(0,0, 'box');
+					box.scale.setTo(0.6*sx,0.8*sy);
+					box.x = controlPanel.x + controlPanel.width - box.width - 130*sx;
+					box.y = controlPanel.y + 80*sx;
+					box.inputEnabled=true;
+					box.frame = 0;
+					//console.log('Box height is '+box.height);
+					//console.log('Box width is '+box.width);
+					
+					// creating the groups to sort the moonrocks
+					onPanel=game.add.group();
+					onBox=game.add.group();
+					
+					for (var i=0;i<ROCK_AMOUNT;i++){
+						objectname = "moonrock" + game.rnd.integerInRange(1,5);
+						panelCoordX[i] = controlPanel.x+220*sx+(i%COLUMNS_PANEL)*150*sx;
+						panelCoordY[i] = controlPanel.y+130*sy+Math.floor(i/COLUMNS_PANEL)*150*sy;
+						
+						onPanel.create(panelCoordX[i], panelCoordY[i], objectname);
+					}
+					break;
+				case 5:
+					break;
+				default:
+			}
+		}
+		
+		function addPropertiesToObjects(){
+			switch (activity) {
+				case 1:
+					onPanel.forEach(function(object){
+						object.anchor.setTo(0.5,0.5);
+						object.frame=0;
+						object.scale.setTo(0.25*sx);
+						object.originalPosition = object.position.clone();
+						object.inputEnabled=true;
+						object.input.enableDrag(false,false,false,255,null,controlPanel);
+						object.input.enableSnap(130 *sx,150 *sy,false,true);
+						object.events.onDragStart.add(onDragStart,this);
+						object.events.onDragStop.add(onDragStop,this);
+						object.events.onDragUpdate.add(onDragUpdate,this);
+					});
+					break;
+				case 5:
+					break;
+			}
+		}
+
+		function loadImages() {
+			// Is Phaser smart enough to know that an image has already been loaded?
+			// Will calling this function be cost efficient?
+		
+			switch (activity) {
+				case 1:	
+					game.load.image('controlPanel',PATH_TO_ASSETS+'Items/ControlPanelcrop.png');
+					game.load.image('background', 'assets/Background/ShipInterior.png');
+					game.load.spritesheet('button',PATH_TO_ASSETS+'Items/Button_sheet.png',288,288,2);
+				
+					game.load.spritesheet('box',PATH_TO_ASSETS+'Items/Box_sheet.png',881,730,2);
+					game.load.spritesheet('moonrock1',PATH_TO_ASSETS+'Items/Rocks/Moonrock1_sheet.png',610,400,2);
+					game.load.spritesheet('moonrock2',PATH_TO_ASSETS+'Items/Rocks/Moonrock2_sheet.png',460,360,2);
+					game.load.spritesheet('moonrock3',PATH_TO_ASSETS+'Items/Rocks/Moonrock3_sheet.png',660,360,2);
+					game.load.spritesheet('moonrock4',PATH_TO_ASSETS+'Items/Rocks/Moonrock4_sheet.png',510,410,2);
+					game.load.spritesheet('moonrock5',PATH_TO_ASSETS+'Items/Rocks/Moonrock5_sheet.png',660,360,2);
+					break;
+				case 5:
+					game.load.image('controlPanel',PATH_TO_ASSETS+'Items/ControlPanelcrop.png');
+					game.load.image('background', 'assets/Background/ShipInterior.png');
+					game.load.spritesheet('button',PATH_TO_ASSETS+'Items/Button_sheet.png',288,288,2);
+				
+					game.load.spritesheet('battery',PATH_TO_ASSETS+'Items/Battery_sheet.png',560,810,2);
+					game.load.spritesheet('crystal1',PATH_TO_ASSETS+'Items/Crystals/Crystal1_sheet.png',460,560,2);
+					game.load.spritesheet('crystal2',PATH_TO_ASSETS+'Items/Crystals/Crystal2_sheet.png',460,510,2);
+					game.load.spritesheet('crystal3',PATH_TO_ASSETS+'Items/Crystals/Crystal3_sheet.png',410,460,2);
+					game.load.spritesheet('crystal4',PATH_TO_ASSETS+'Items/Crystals/Crystal4_sheet.png',460,410,2);
+					game.load.spritesheet('crystal5',PATH_TO_ASSETS+'Items/Crystals/Crystal5_sheet.png',410,360,2);
+					break;
+				default:
+					window.alert("incorrect activity selection");
+					return;
+			}
+		}
+        
+		function changeSprites(){
+			switch(activity){
+				case 1:
+					box.loadTexture('b', 0, false);
+					
+					break;
+				case 5:
+					background.loadTexture('background');
+					background.anchor.setTo(0.5,0.5);
+					background.x = game.world.centerX;
+					background.y = game.world.centerY;
+					
+					controlPanel.loadTexture('controlPanel');
+					controlPanel.scale.setTo(0.95*sx,0.95*sy);
+					controlPanel.x = game.world.centerX - controlPanel.width/2;
+					controlPanel.y = game.world.centerY - controlPanel.height/2;
+					
+					box.loadTexture('battery');
+					
+					button.loadTexture('button');
+					
+					goal.loadTexture('box');
+					goal.frame = 1;
+					goal.scale.setTo(0.2*sx,0.25*sy);
+					goal.x = controlPanel.x + controlPanel.width/2 - box.width/2;
+					goal.y = controlPanel.y + controlPanel.height/5 - box.height/2;
+					
+					
+					break;
+				default:
+			}
+		}
+		
+		function clearActivity(){// reset variables and groups
+			//onPanel.destroy(true,true);/////
+			onPanel.removeAll(true,true,false);//ttt?? to delete the texture
+			onBox.removeAll(true,true,false);//ttt?? to delete the texture
+			box.kill();
+			controlPanel.kill();
+			button.kill();
+			count=0;
+			scoreText="";
+			promptText="";
+			attempts=1;
+			stat=false;
+			boxCoordX = [];
+			boxCoordY = [];
+			panelCoordX = [];
+			panelCoordY = [];
+		}
+		
+		function changeActivity(){
+			clearActivity();
+		
+			switch(activity){
+				case 1:
+				
+					break;
+				case 5:
+					loadImages();
+					
+					// ### onButtonPress needs switch cases for activity
+					// change sprites
+					// new target amount
+					
+					target = game.rnd.integerInRange(1,10);
+					
+					changeSprites();
+					
+					
+					break;
+				default:
+			}
+		}
+		
+		
     };
-
     </script>
-
     </body>
 </html>
