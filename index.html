@@ -164,6 +164,11 @@
 					}
 					break;
 				case CHARGE_SPACESHIP:
+					for (var i = 0; i < CRYSTAL_AMOUNT; i++)
+					{
+						boxCoordX[i] = controlPanel.x + box.x+20*sx + i%3*120*sx;
+						boxCoordY[i] = controlPanel.y + box.y+100*sy + Math.floor(i/COLUMNS_BOX)*100*sy;
+					}
 					break;
 				default:
 			}
@@ -240,32 +245,62 @@
         }
 
         function onDragStop(sprite,pointer){
-			//switch!!
-            sprite.frame=0;
-            box.frame = 0;
-            			
-			if (isInside(sprite) && onPanel.removeChild(sprite))
-			{
-				onBox.add(sprite);
-			}
-			else if (!isInside(sprite) && onBox.removeChild(sprite))
-			{
-				onPanel.add(sprite);
-			}
-			console.log("onPanel.total: " + onPanel.total + " onBox.total: " + onBox.total);
-		
-			//Reorders the rocks on the Panel
-			for (var i = 0; i < onPanel.total; i++)
-			{
-				onPanel.getChildAt(i).x = panelCoordX[i];
-				onPanel.getChildAt(i).y = panelCoordY[i];
-			}
-			
-			//Reorders the rocks on the Box
-			for (var i = 0; i < onBox.total; i++)
-			{
-				onBox.getChildAt(i).x = boxCoordX[i];
-				onBox.getChildAt(i).y = boxCoordY[i];
+			switch(activity){
+				case PACK_MOONROCKS:
+					sprite.frame=0;
+					box.frame = 0;
+								
+					if (isInside(sprite) && onPanel.removeChild(sprite))
+					{
+						onBox.add(sprite);
+					}
+					else if (!isInside(sprite) && onBox.removeChild(sprite))
+					{
+						onPanel.add(sprite);
+					}
+					//console.log("onPanel.total: " + onPanel.total + " onBox.total: " + onBox.total);
+					// Reorders the object(s) on the Panel
+					for (var i = 0; i < onPanel.total; i++)
+					{
+						onPanel.getChildAt(i).x = panelCoordX[i];
+						onPanel.getChildAt(i).y = panelCoordY[i];
+					}
+					// Reorders the object(s) on the Box
+					for (var i = 0; i < onBox.total; i++)
+					{
+						onBox.getChildAt(i).x = boxCoordX[i];
+						onBox.getChildAt(i).y = boxCoordY[i];
+					}
+					break;
+					
+				case CHARGE_SPACESHIP:
+					sprite.frame=0;
+					box.frame = 0;
+								
+					if (isInside(sprite) && onPanel.removeChild(sprite))
+					{
+						onBox.add(sprite);
+					}
+					else if (!isInside(sprite) && onBox.removeChild(sprite))
+					{
+						onPanel.add(sprite);
+					}
+					//console.log("onPanel.total: " + onPanel.total + " onBox.total: " + onBox.total);
+				
+					//Reorders the object(s) on the Panel
+					for (var i = 0; i < onPanel.total; i++)
+					{
+						onPanel.getChildAt(i).x = panelCoordX[i];
+						onPanel.getChildAt(i).y = panelCoordY[i];
+					}
+					
+					//Reorders the object(s) on the Box
+					for (var i = 0; i < onBox.total; i++)
+					{
+						onBox.getChildAt(i).x = boxCoordX[i];
+						onBox.getChildAt(i).y = boxCoordY[i];
+					}
+					break;
 			}
         }
 
@@ -277,7 +312,7 @@
 			}
         }
 
-        function isInside(object){
+        function isInside(object){//,box){ might need this parameter
 			// switch!!
             if (object.x > box.x+0.01*game.width && object.y > (box.y +0.01*game.height) && object.x < box.x+box.width-0.01*game.width && object.y < box.y+box.height-0.01*game.height) return true;
             else return false;
@@ -390,6 +425,7 @@
 						object.events.onDragUpdate.add(onDragUpdate,this);
 					});
 					break;
+					
 				case CHARGE_SPACESHIP:
 					onPanel.forEach(function(object){
 						object.anchor.setTo(0.5,0.5);
@@ -484,7 +520,6 @@
 						objectname = "crystal" + game.rnd.integerInRange(1,5);
 						panelCoordX[i] = controlPanel.x+220*sx+(i%COLUMNS_PANEL)*150*sx;
 						panelCoordY[i] = controlPanel.y+130*sy+Math.floor(i/COLUMNS_PANEL)*150*sy;
-						//var object = objects.create(controlPanel.x+220*sx+(arr[i]%4)*150*sx,controlPanel.y+150*sy+Math.floor(arr[i]/4)*180*sy,objectname);
 						onPanel.create(panelCoordX[i], panelCoordY[i], objectname);
 					}
 					break;
@@ -493,10 +528,8 @@
 		}
 		
 		function clearActivity(){// reset variables and groups
-			//onPanel.destroy(true,true);/////
 			onPanel.removeAll(true,true,false);//ttt?? to delete the texture
 			onBox.removeAll(true,true,false);//ttt?? to delete the texture
-			//box.visible = false;
 			box.kill();
 			controlPanel.kill();
 			button.kill();
@@ -522,6 +555,7 @@
 					target = game.rnd.integerInRange(1,10);
 					loadAllSprites();
 					changeSprites();
+					boxCoordinates();
 					addPropertiesToObjects();
 					break;
 					
