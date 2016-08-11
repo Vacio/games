@@ -20,6 +20,7 @@
 	<script type="text/javascript">
     
     const ROCK_AMOUNT = 10;
+	const CRYSTAL_AMOUNT = 10;
     const COLUMNS_PANEL = 4;
     const COLUMNS_BOX = 3;
 	const PATH_TO_ASSETS='assets/';
@@ -390,6 +391,17 @@
 					});
 					break;
 				case CHARGE_SPACESHIP:
+					onPanel.forEach(function(object){
+						object.anchor.setTo(0.5,0.5);
+						object.frame=0;
+						object.scale.setTo(0.35*sx);
+						object.inputEnabled=true;
+						object.input.enableDrag(false,false,false,255,null,controlPanel);
+						object.events.onDragStart.add(onDragStart,this);
+						object.events.onDragStop.add(onDragStop,this);
+						object.events.onDragUpdate.add(onDragUpdate,this);
+						object.input.enableSnap(100*sx,100*sy,false,true);
+					});
 					break;
 			}
 		}
@@ -452,8 +464,8 @@
 					goal = game.add.sprite(0,0,'box');
 					goal.frame = 1;
 					goal.scale.setTo(0.2*sx,0.25*sy);
-					goal.x = controlPanel.x + controlPanel.width/2 - box.width/2;
-					goal.y = controlPanel.y + controlPanel.height/5 - box.height/2;
+					goal.x = controlPanel.x + controlPanel.width/2 - goal.width/2;
+					goal.y = controlPanel.y + controlPanel.height/5 - goal.height/2;
 	
 					// battery tray
 					box.loadTexture('battery');
@@ -462,14 +474,19 @@
 					box.frame = 0;
 					//box.anchor.setTo(0.5,0.5);
 					box.scale.setTo(0.8*sx,0.85*sy);
-					box.x = controlPanel.x + controlPanel.width - battery.width - 200*sx;
-					box.y = controlPanel.y + controlPanel.height/2 - battery.height/2;
+					box.x = controlPanel.x + controlPanel.width - box.width - 200*sx;
+					box.y = controlPanel.y + controlPanel.height/2 - box.height/2;
 					//box.inputEnabled=true;
 					//box.alive = true;
 					//box.exist = true;
-									
 					
-					
+					for (var i=0;i<CRYSTAL_AMOUNT;i++){
+						objectname = "crystal" + game.rnd.integerInRange(1,5);
+						panelCoordX[i] = controlPanel.x+220*sx+(i%COLUMNS_PANEL)*150*sx;
+						panelCoordY[i] = controlPanel.y+130*sy+Math.floor(i/COLUMNS_PANEL)*150*sy;
+						//var object = objects.create(controlPanel.x+220*sx+(arr[i]%4)*150*sx,controlPanel.y+150*sy+Math.floor(arr[i]/4)*180*sy,objectname);
+						onPanel.create(panelCoordX[i], panelCoordY[i], objectname);
+					}
 					break;
 				default:
 			}
@@ -505,6 +522,7 @@
 					target = game.rnd.integerInRange(1,10);
 					loadAllSprites();
 					changeSprites();
+					addPropertiesToObjects();
 					break;
 					
 				default:
