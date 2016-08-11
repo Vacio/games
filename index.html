@@ -218,7 +218,7 @@
 			
 			if (count==0){//for quick debugging
 			//if (count==target){
-				alert("changing activity");
+				//alert("changing activity");
 				//activity++;
 				activity = CHARGE_SPACESHIP;
 				if (activity > GAME1ACTIVITIES){
@@ -435,6 +435,26 @@
 					controlPanel.y = game.world.centerY - controlPanel.height/2;
 					controlPanel.visible = true;
 					
+					button.loadTexture('button');
+					button.scale.setTo(0.4*sx);
+					button.scaleMin = 0.3;
+					button.x = controlPanel.x+controlPanel.width/2-button.width/2;
+					button.y = controlPanel.y+controlPanel.height-button.height-0.1*game.height;
+					button.frame=0;
+					button.visible = true;
+					//=-=-=-=-=-=-
+					button.inputEnabled=true;
+					button.events.onInputDown.add(onButtonPress,this);
+					button.events.onInputUp.add(onButtonRelease,this);
+					
+					
+					// rectangle where the target number is displayed
+					goal = game.add.sprite(0,0,'box');
+					goal.frame = 1;
+					goal.scale.setTo(0.2*sx,0.25*sy);
+					goal.x = controlPanel.x + controlPanel.width/2 - box.width/2;
+					goal.y = controlPanel.y + controlPanel.height/5 - box.height/2;
+	
 					// battery tray
 					box.loadTexture('battery');
 					box.visible = true;
@@ -444,32 +464,10 @@
 					box.scale.setTo(0.8*sx,0.85*sy);
 					box.x = controlPanel.x + controlPanel.width - battery.width - 200*sx;
 					box.y = controlPanel.y + controlPanel.height/2 - battery.height/2;
-					box.inputEnabled=true;
+					//box.inputEnabled=true;
 					//box.alive = true;
 					//box.exist = true;
-					
-					//box.scale.setTo(0.6*sx,0.8*sy);
-					//box.x = controlPanel.x + controlPanel.width - box.width - 130*sx;
-					//box.y = controlPanel.y + 80*sx;
-					//box.inputEnabled=true;
-					
-					
-					
-					// rectangle where the target number is displayed
-					goal = game.add.sprite(0,0,'box');
-					goal.frame = 1;
-					goal.scale.setTo(0.2*sx,0.25*sy);
-					goal.x = controlPanel.x + controlPanel.width/2 - box.width/2;
-					goal.y = controlPanel.y + controlPanel.height/5 - box.height/2;
-
-					
-					button.loadTexture('button');
-					
-					goal.loadTexture('box');
-					goal.frame = 1;
-					goal.scale.setTo(0.2*sx,0.25*sy);
-					goal.x = controlPanel.x + controlPanel.width/2 - box.width/2;
-					goal.y = controlPanel.y + controlPanel.height/5 - box.height/2;
+									
 					
 					
 					break;
@@ -501,19 +499,17 @@
 			
 			switch(activity){
 				case PACK_MOONROCKS:
-				
 					break;
+					
 				case CHARGE_SPACESHIP:
 					target = game.rnd.integerInRange(1,10);
 					loadAllSprites();
 					changeSprites();
-					
 					break;
+					
 				default:
 			}
 		}
-		
-		
     };
     </script>
     </body>
