@@ -229,6 +229,7 @@
 					break;
 					
 				case CHARGE_SPACESHIP:
+					console.log("onButtonPress - CHARGE_SPACESHIP case");
 					sprite.frame=1;
 					stat = messageOnObjectCount();
 					if (!stat[0]) attempts++;
@@ -268,25 +269,38 @@
 					}
 					robot_command.publish(do_complete);
 					
-					
 					if (onBox.total==0){//for quick debugging
 					//if (onBox.total==target){
+						console.log("Fun Time!!");
 						changeActivity(); 
 					}
 					break;
+				default:
 			}
-					
-            
         }
 
         function onButtonRelease(sprite,pointer){
-			//switch?? Perhaps
-            sprite.frame=0;
+			switch(activity){
+				case PACK_MOONROCKS:
+					sprite.frame=0;
+					break;
+				case CHARGE_SPACESHIP:
+					sprite.frame=0;
+					break;
+				default:
+			}
         }
 
         function onDragStart(sprite,pointer){
-			//switch?? Probably not
-            sprite.frame=1;
+			switch(activity){
+				case PACK_MOONROCKS:
+					sprite.frame=1;
+					break;
+				case CHARGE_SPACESHIP:
+					sprite.frame=1;
+					break;
+				default:
+			}
         }
 
         function onDragStop(sprite,pointer){
@@ -610,8 +624,8 @@
 			box.kill();
 			controlPanel.kill();
 			button.kill();
-			scoreText="";
-			promptText="";
+			scoreText.setText('');
+			promptText.setText('');
 			attempts=1;
 			stat=false;
 			boxCoordX = [];
@@ -634,11 +648,16 @@
 					break;
 					
 				case CHARGE_SPACESHIP:
-					target = game.rnd.integerInRange(1,10);
 					loadAllSprites();
 					changeSprites();
 					boxCoordinates();
 					addPropertiesToObjects();
+					
+					target = game.rnd.integerInRange(1,10);
+					scoreText.setText('Count: '+onBox.total);
+					fontSize = 100*sx;
+					promptText = game.add.text(goal.x+goal.width/2,goal.y+goal.height/2,target,{fontSize:fontSize+'px',fill:'#fff'});
+					promptText.anchor.setTo(0.5,0.5);
 					break;
 					
 				default:
