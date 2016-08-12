@@ -31,9 +31,11 @@
 	const SELECT_PLANET = 4;
 	const FEED_SPACE_PETS = 5; // app2.html
 	const BOARD_SPACE_PETS = 1; // game 2, activity 1
-
+	const MIN_OBJECTS = 1;
+	const MAX_OBJECTS = 2;//for quick debugging/testing (should be set to 10)
+	
     window.onload = function() {
-    	var activity = 1;
+    	var activity = 0;
         var gameWidth = 1920;
         var gameHeight = 1080;
         var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '', { preload: preload, create: create,  render:render });
@@ -42,12 +44,12 @@
         var box; // where objects are places to reach target
 		var goal; // a box where the target is displayed
 		var background;
-		var button;
-		var controlPanel;
+		var controlPanel;//= game.add.sprite(0,0,null);
+		var button;//= game.add.sprite(controlPanel.x+controlPanel.width/2,controlPanel.y+controlPanel.height-200,null);
         var scoreText;
         var promptText;
-        var target = game.rnd.integerInRange(1,10); // Number of objects needed to be in box randomly generated
-		var attempts=1,stat=false;
+        var target = game.rnd.integerInRange(MIN_OBJECTS,MAX_OBJECTS); // Number of objects needed to be in box randomly generated
+		var attempts=1, stat=false;
         var sx = window.innerWidth/gameWidth;
         var sy = window.innerHeight/gameHeight;
         var boxCoordX = new Array();
@@ -76,6 +78,7 @@
 		
 		// *** Phaser ***
         function preload () {
+			initailizePhaserVariables();
 			loadAllSprites();
 			
             window.addEventListener('resize', function(event){resizeGame();});
@@ -121,22 +124,11 @@
 		
         function create () {
 		
-			makePictures();
-			
-			boxCoordinates();
-
-			addPropertiesToObjects();
-		
-            scoreText = game.add.text(game.width/2,0.1*game.height,'Count: 0',{fontSize:'24px',fill:'#000'});
-            scoreText.x=game.width/2-scoreText.width/2;
-
-            promptText = game.add.text(game.width/2,0.03*game.height,'Please move moonrocks into the box',{fontSize:'24px',fill:'#fff'});
-            promptText.x = game.width/2-promptText.width/2;
-            var question = 'Please move ' + target + ' moonrocks into the box';
-            promptText.setText(question);
-
-
-        }
+			//makePictures();
+			changeActivity();
+			//boxCoordinates();
+			//addPropertiesToObjects();}
+		}
 		
 		function update(){
 
@@ -216,11 +208,8 @@
 					robot_command.publish(do_complete);
 					
 					
-					if (onBox.total==0){//for quick debugging
-					//if (onBox.total==target){
-						//alert("changing activity");
-						//activity++;
-						activity = CHARGE_SPACESHIP;
+					//if (onBox.total==0){//for quick debugging
+					if (onBox.total==target){
 						if (activity > GAME1ACTIVITIES){
 							activity = PACK_MOONROCKS;
 						}
@@ -269,9 +258,8 @@
 					}
 					robot_command.publish(do_complete);
 					
-					if (onBox.total==0){//for quick debugging
-					//if (onBox.total==target){
-						console.log("Fun Time!!");
+					//if (onBox.total==0){//for quick debugging
+					if (onBox.total==target){
 						changeActivity(); 
 					}
 					break;
@@ -444,6 +432,7 @@
             return array;
         }
 		
+		/*
 		function makePictures(){
 			switch(activity){
 				case PACK_MOONROCKS:
@@ -499,6 +488,7 @@
 				default:
 			}
 		}
+		*/
 		
 		function addPropertiesToObjects(){
 			switch (activity) {
@@ -560,6 +550,55 @@
 			switch(activity){
 				case PACK_MOONROCKS:
 					//box.loadTexture('b', 0, false);
+					
+					
+					// background image is displayed
+					background = game.add.sprite(game.world.centerX, game.world.centerY, 'background');
+					//  Moves the image anchor to the middle, so it centers inside the game properly
+					background.anchor.setTo(0.5, 0.5);
+					//console.log('Game width is '+ game.width);
+					//console.log('Game height is '+ game.height);
+
+					// controlPanel where moonrock located image is created on screen
+					controlPanel = game.add.sprite(0,0,'controlPanel');
+					controlPanel.scale.setTo(0.8*sx,0.8*sy);
+					controlPanel.x = game.world.centerX - controlPanel.width/2;
+					controlPanel.y = game.world.centerY - controlPanel.height/2;
+					//console.log('cp width and height are '+controlPanel.width+'x'+controlPanel.height);
+
+					// button image is loaded
+					button = game.add.sprite(controlPanel.x+controlPanel.width/2,controlPanel.y+controlPanel.height-200,'button');
+					button.scale.setTo(0.3);
+					button.x = controlPanel.x+controlPanel.width/2-button.width/2;
+					button.y = controlPanel.y+controlPanel.height-button.height-0.05*game.height;
+					button.frame=0;// button frame 
+					button.inputEnabled=true;// Enables all kind of input actions on this image (click, etc)
+					// The onButtonPress function
+					button.events.onInputDown.add(onButtonPress,this);
+					button.events.onInputUp.add(onButtonRelease,this);
+					
+					// box where moonrocks are moved to
+					box = game.add.sprite(0,0, 'box');
+					box.scale.setTo(0.6*sx,0.8*sy);
+					box.x = controlPanel.x + controlPanel.width - box.width - 130*sx;
+					box.y = controlPanel.y + 80*sx;
+					box.inputEnabled=true;
+					box.frame = 0;
+					//console.log('Box height is '+box.height);
+					//console.log('Box width is '+box.width);
+					
+					// creating the groups to sort the moonrocks
+					onPanel=game.add.group();
+					onBox=game.add.group();
+					
+					for (var i=0;i<ROCK_AMOUNT;i++){
+						objectname = "moonrock" + game.rnd.integerInRange(1,5);
+						panelCoordX[i] = controlPanel.x+220*sx+(i%COLUMNS_PANEL)*150*sx;
+						panelCoordY[i] = controlPanel.y+130*sy+Math.floor(i/COLUMNS_PANEL)*150*sy;
+						
+						onPanel.create(panelCoordX[i], panelCoordY[i], objectname);
+					}
+					
 					
 					break;
 				case CHARGE_SPACESHIP:
@@ -634,9 +673,30 @@
 			panelCoordY = [];
 		}
 		
+		function initailizePhaserVariables(){
+			onPanel = game.add.group();
+			onBox = game.add.group();
+			
+			background = game.add.sprite(game.world.centerX, game.world.centerY, null);
+			controlPanel = game.add.sprite(0,0,null);
+			button = game.add.sprite(controlPanel.x+controlPanel.width/2,controlPanel.y+controlPanel.height-200,null);
+			box = game.add.sprite(game.world.centerX, game.world.centerY, null);
+			goal  = game.add.sprite(game.world.centerX, game.world.centerY, null);
+        
+			scoreText = game.add.text(game.width/2,0.1*game.height,'Count: 0',{fontSize:'24px',fill:'#000'});
+            scoreText.x=game.width/2-scoreText.width/2;
+			
+            promptText = game.add.text(game.width/2,0.03*game.height,'Please move moonrocks into the box',{fontSize:'24px',fill:'#fff'});
+			promptText.x = game.width/2-promptText.width/2;
+		}
+		
 		function changeActivity(){
-			activity = CHARGE_SPACESHIP;//for quick debugging
-			//activity++;
+			//activity = CHARGE_SPACESHIP;//for quick debugging
+			activity++;
+			
+			//for testing switching back to PACK_MOONROCKS
+			if (activity == CHARGE_SPACESHIP+1) activity = PACK_MOONROCKS; //for debugging
+			
 			if (activity > GAME1ACTIVITIES){
 				activity = PACK_MOONROCKS;
 			}
@@ -645,15 +705,27 @@
 			
 			switch(activity){
 				case PACK_MOONROCKS:
-					break;
+					console.log("switching to PACK_MOONROCKS");
 					
-				case CHARGE_SPACESHIP:
-					loadAllSprites();
 					changeSprites();
 					boxCoordinates();
 					addPropertiesToObjects();
 					
-					target = game.rnd.integerInRange(1,10);
+					target = game.rnd.integerInRange(MIN_OBJECTS,MAX_OBJECTS);
+					scoreText.setText('Count: '+onBox.total);		
+
+					//scoreText = game.add.text(game.width/2,0.1*game.height,'Count: 0',{fontSize:'24px',fill:'#000'});
+					//scoreText.x=game.width/2-scoreText.width/2;
+					promptText.setText('Please move ' + target + ' moonrocks into the box');
+					
+					break;
+					
+				case CHARGE_SPACESHIP:
+					changeSprites();
+					boxCoordinates();
+					addPropertiesToObjects();
+					
+					target = game.rnd.integerInRange(MIN_OBJECTS,MAX_OBJECTS);
 					scoreText.setText('Count: '+onBox.total);
 					fontSize = 100*sx;
 					promptText = game.add.text(goal.x+goal.width/2,goal.y+goal.height/2,target,{fontSize:fontSize+'px',fill:'#fff'});
