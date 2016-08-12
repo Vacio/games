@@ -319,6 +319,7 @@
 					break;
 					
 				case CHARGE_SPACESHIP:
+					//console.log("inside onDragStop - Crystals");// for debugging
 					sprite.frame=0;
 					box.frame = 0;
 								
@@ -330,7 +331,7 @@
 					{
 						onPanel.add(sprite);
 					}
-					//console.log("onPanel.total: " + onPanel.total + " onBox.total: " + onBox.total);
+					// console.log("onPanel.total: " + onPanel.total + " onBox.total: " + onBox.total);// for debugging
 				
 					//Reorders the object(s) on the Panel
 					for (var i = 0; i < onPanel.total; i++)
@@ -350,33 +351,66 @@
         }
 
         function onDragUpdate(sprite,pointer){
-			// switch??
-            if (isInside(sprite)) box.frame = 1;
-            else if (!isInside(sprite)){
-				box.frame = 0;	
+			switch(activity){
+				case PACK_MOONROCKS:
+					if (isInside(sprite)) box.frame = 1;
+					else if (!isInside(sprite)){
+						box.frame = 0;	
+					}
+					break;
+				case CHARGE_SPACESHIP:
+					if (isInside(sprite)) box.frame = 1;
+					else if (!isInside(sprite)){
+						box.frame = 0;	
+					}
+					break;
+				default:
 			}
+            
         }
 
         function isInside(object){//,box){ might need this parameter
-			// switch!!
-            if (object.x > box.x+0.01*game.width && object.y > (box.y +0.01*game.height) && object.x < box.x+box.width-0.01*game.width && object.y < box.y+box.height-0.01*game.height) return true;
-            else return false;
+			switch(activity){
+				case PACK_MOONROCKS:
+					if (object.x > box.x+0.01*game.width && object.y > (box.y +0.01*game.height) && object.x < box.x+box.width-0.01*game.width && object.y < box.y+box.height-0.01*game.height) return true;
+					else return false;
+					break;
+				case CHARGE_SPACESHIP:
+					if (object.x > box.x+0.01*game.width && object.y > (box.y +0.01*game.height) && object.x < box.x+box.width-0.01*game.width && object.y < box.y+box.height-0.01*game.height) return true;
+					else return false;
+					break;
+				default:
+			}
         }
 
         function messageOnObjectCount(){
- 
-			//console.log("Count in box! : " + onBox.total);
-            
-            scoreText.setText('Count: '+onBox.total);
-            
-			if (onBox.total==target){
-				//return [true, ""];
-				alert('Well done!'); 				
-				return true;
+            switch(activity){
+				case PACK_MOONROCKS:
+					scoreText.setText('Count: '+onBox.total);
+					if (onBox.total==target){
+						//return [true, ""];
+						alert('Well done!'); 				
+						return true;
+					}
+					else {
+						return [false,(onBox.total<target)?"less":"more"];
+					}
+					break;
+				case CHARGE_SPACESHIP:
+					scoreText.setText('Count: '+onBox.total);
+					if (onBox.total==target){
+						//return [true, ""];
+						alert('Well done!'); 				
+						return true;
+					}
+					else {
+						return [false,(onBox.total<target)?"less":"more"];
+					}
+					break;
+				default:
 			}
-			else {
-				return [false,(onBox.total<target)?"less":"more"];
-			}
+			
+			
         }
 
 		function reset(){
@@ -403,8 +437,8 @@
 					background = game.add.sprite(game.world.centerX, game.world.centerY, 'background');
 					//  Moves the image anchor to the middle, so it centers inside the game properly
 					background.anchor.setTo(0.5, 0.5);
-					//console.log('Game width is'+ game.width);
-					//console.log('Game height is'+ game.height);
+					//console.log('Game width is '+ game.width);
+					//console.log('Game height is '+ game.height);
 
 					// controlPanel where moonrock located image is created on screen
 					controlPanel = game.add.sprite(0,0,'controlPanel');
