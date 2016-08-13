@@ -21,26 +21,33 @@
     
     const ROCK_AMOUNT = 10;
 	const CRYSTAL_AMOUNT = 10;
-    const COLUMNS_PANEL = 4;
+    
+	const COLUMNS_PANEL = 4;
     const COLUMNS_BOX = 3;
+	
 	const PATH_TO_ASSETS='assets/';
-	const GAME1ACTIVITIES = 6;
+	
+	const MIN_OBJECTS = 1;
+	const MAX_OBJECTS = 2;//for quick debugging/testing (should be set to 10)
+	
+	const GAME1ACTIVITIES = 6; // amount of activites in Game 1
+	
+	// the activites in Game 1:
 	const PACK_MOONROCKS = 1;
 	const CHARGE_SPACESHIP = 2; // app5.html
 	const SELECT_GALAXY = 3;
 	const SELECT_PLANET = 4;
 	const FEED_SPACE_PETS = 5; // app2.html
 	const BOARD_SPACE_PETS = 1; // game 2, activity 1
-	const MIN_OBJECTS = 1;
-	const MAX_OBJECTS = 2;//for quick debugging/testing (should be set to 10)
+	
 	
     window.onload = function() {
     	var activity = 0;
         var gameWidth = 1920;
         var gameHeight = 1080;
         var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, '', { preload: preload, create: create,  render:render });
-		var onPanel;
-		var onBox;
+		var onPanel; // used as a phaser group to group the objects while on the panel
+		var onBox; // used as a phaser group to group the objects while on the box
         var box; // where objects are places to reach target
 		var goal; // a box where the target is displayed
 		var background;
@@ -52,9 +59,9 @@
 		var attempts=1, stat=false;
         var sx = window.innerWidth/gameWidth;
         var sy = window.innerHeight/gameHeight;
-        var boxCoordX = new Array();
+        var boxCoordX = new Array(); // for alining the objects on the box
         var boxCoordY = new Array();
-        var panelCoordX = new Array();
+        var panelCoordX = new Array(); // for alining the objects on the panel
         var panelCoordY = new Array();
 
 		// *** ROS ***
@@ -78,7 +85,7 @@
 		
 		// *** Phaser ***
         function preload () {
-			initailizePhaserVariables();
+			initailizeVariables();
 			loadAllSprites();
 			
             window.addEventListener('resize', function(event){resizeGame();});
@@ -124,10 +131,7 @@
 		
         function create () {
 		
-			//makePictures();
 			changeActivity();
-			//boxCoordinates();
-			//addPropertiesToObjects();}
 		}
 		
 		function update(){
@@ -207,18 +211,13 @@
 					}
 					robot_command.publish(do_complete);
 					
-					
-					//if (onBox.total==0){//for quick debugging
+					// condition for changing game
 					if (onBox.total==target){
-						if (activity > GAME1ACTIVITIES){
-							activity = PACK_MOONROCKS;
-						}
 						changeActivity(); 
 					}
 					break;
 					
 				case CHARGE_SPACESHIP:
-					console.log("onButtonPress - CHARGE_SPACESHIP case");
 					sprite.frame=1;
 					stat = messageOnObjectCount();
 					if (!stat[0]) attempts++;
@@ -258,7 +257,7 @@
 					}
 					robot_command.publish(do_complete);
 					
-					//if (onBox.total==0){//for quick debugging
+					// condition for changing game
 					if (onBox.total==target){
 						changeActivity(); 
 					}
@@ -296,7 +295,8 @@
 				case PACK_MOONROCKS:
 					sprite.frame=0;
 					box.frame = 0;
-								
+					
+					// moves the object between groups					
 					if (isInside(sprite) && onPanel.removeChild(sprite))
 					{
 						onBox.add(sprite);
@@ -305,7 +305,7 @@
 					{
 						onPanel.add(sprite);
 					}
-					//console.log("onPanel.total: " + onPanel.total + " onBox.total: " + onBox.total);
+					
 					// Reorders the object(s) on the Panel
 					for (var i = 0; i < onPanel.total; i++)
 					{
@@ -324,7 +324,8 @@
 					//console.log("inside onDragStop - Crystals");// for debugging
 					sprite.frame=0;
 					box.frame = 0;
-								
+					
+					// moves the object between groups
 					if (isInside(sprite) && onPanel.removeChild(sprite))
 					{
 						onBox.add(sprite);
@@ -333,15 +334,13 @@
 					{
 						onPanel.add(sprite);
 					}
-					// console.log("onPanel.total: " + onPanel.total + " onBox.total: " + onBox.total);// for debugging
-				
+					
 					//Reorders the object(s) on the Panel
 					for (var i = 0; i < onPanel.total; i++)
 					{
 						onPanel.getChildAt(i).x = panelCoordX[i];
 						onPanel.getChildAt(i).y = panelCoordY[i];
 					}
-					
 					//Reorders the object(s) on the Box
 					for (var i = 0; i < onBox.total; i++)
 					{
@@ -371,7 +370,7 @@
             
         }
 
-        function isInside(object){//,box){ might need this parameter
+        function isInside(object){//,box){ // might need this parameter (especially for activities from game 2)
 			switch(activity){
 				case PACK_MOONROCKS:
 					if (object.x > box.x+0.01*game.width && object.y > (box.y +0.01*game.height) && object.x < box.x+box.width-0.01*game.width && object.y < box.y+box.height-0.01*game.height) return true;
@@ -384,13 +383,16 @@
 				default:
 			}
         }
-
+		
         function messageOnObjectCount(){
             switch(activity){
 				case PACK_MOONROCKS:
+					// updates the count displayed when the button is hit
 					scoreText.setText('Count: '+onBox.total);
 					scoreText.x = game.width/2-scoreText.width/2;
 					scoreText.y = 0.1*game.height;
+					
+					// returns a ros message
 					if (onBox.total==target){
 						//return [true, ""];
 						alert('Well done!'); 				
@@ -401,9 +403,12 @@
 					}
 					break;
 				case CHARGE_SPACESHIP:
+					// updates the count displayed when the button is hit
 					scoreText.setText('Count: '+onBox.total);
 					scoreText.x = game.width/2-scoreText.width/2;
 					scoreText.y = 0.05*game.height;
+					
+					// returns a ros message
 					if (onBox.total==target){
 						//return [true, ""];
 						alert('Well done!'); 				
@@ -435,64 +440,6 @@
             }
             return array;
         }
-		
-		/*
-		function makePictures(){
-			switch(activity){
-				case PACK_MOONROCKS:
-					// background image is displayed
-					background = game.add.sprite(game.world.centerX, game.world.centerY, 'background');
-					//  Moves the image anchor to the middle, so it centers inside the game properly
-					background.anchor.setTo(0.5, 0.5);
-					//console.log('Game width is '+ game.width);
-					//console.log('Game height is '+ game.height);
-
-					// controlPanel where moonrock located image is created on screen
-					controlPanel = game.add.sprite(0,0,'controlPanel');
-					controlPanel.scale.setTo(0.8*sx,0.8*sy);
-					controlPanel.x = game.world.centerX - controlPanel.width/2;
-					controlPanel.y = game.world.centerY - controlPanel.height/2;
-					//console.log('cp width and height are '+controlPanel.width+'x'+controlPanel.height);
-
-					// button image is loaded
-					button = game.add.sprite(controlPanel.x+controlPanel.width/2,controlPanel.y+controlPanel.height-200,'button');
-					button.scale.setTo(0.3);
-					button.x = controlPanel.x+controlPanel.width/2-button.width/2;
-					button.y = controlPanel.y+controlPanel.height-button.height-0.05*game.height;
-					button.frame=0;// button frame 
-					button.inputEnabled=true;// Enables all kind of input actions on this image (click, etc)
-					// The onButtonPress function
-					button.events.onInputDown.add(onButtonPress,this);
-					button.events.onInputUp.add(onButtonRelease,this);
-					
-					// box where moonrocks are moved to
-					box = game.add.sprite(0,0, 'box');
-					box.scale.setTo(0.6*sx,0.8*sy);
-					box.x = controlPanel.x + controlPanel.width - box.width - 130*sx;
-					box.y = controlPanel.y + 80*sx;
-					box.inputEnabled=true;
-					box.frame = 0;
-					//console.log('Box height is '+box.height);
-					//console.log('Box width is '+box.width);
-					
-					// creating the groups to sort the moonrocks
-					onPanel=game.add.group();
-					onBox=game.add.group();
-					
-					for (var i=0;i<ROCK_AMOUNT;i++){
-						objectname = "moonrock" + game.rnd.integerInRange(1,5);
-						panelCoordX[i] = controlPanel.x+220*sx+(i%COLUMNS_PANEL)*150*sx;
-						panelCoordY[i] = controlPanel.y+130*sy+Math.floor(i/COLUMNS_PANEL)*150*sy;
-						
-						onPanel.create(panelCoordX[i], panelCoordY[i], objectname);
-					}
-					break;
-				case CHARGE_SPACESHIP:
-					break;
-				default:
-			}
-		}
-		*/
 		
 		function addPropertiesToObjects(){
 			switch (activity) {
@@ -553,8 +500,6 @@
 		function changeSprites(){
 			switch(activity){
 				case PACK_MOONROCKS:
-					//box.loadTexture('b', 0, false);
-					
 					background.loadTexture('background');
 					background.anchor.setTo(0.5,0.5);
 					background.x = game.world.centerX;
@@ -566,8 +511,7 @@
 					controlPanel.scale.setTo(0.8*sx,0.8*sy);
 					controlPanel.x = game.world.centerX - controlPanel.width/2;
 					controlPanel.y = game.world.centerY - controlPanel.height/2;
-					//console.log('cp width and height are '+controlPanel.width+'x'+controlPanel.height);
-
+					
 					// button image is loaded
 					button = game.add.sprite(controlPanel.x+controlPanel.width/2,controlPanel.y+controlPanel.height-200,'button');
 					button.scale.setTo(0.3);
@@ -575,7 +519,6 @@
 					button.y = controlPanel.y+controlPanel.height-button.height-0.05*game.height;
 					button.frame=0;// button frame 
 					button.inputEnabled=true;// Enables all kind of input actions on this image (click, etc)
-					// The onButtonPress function
 					button.events.onInputDown.add(onButtonPress,this);
 					button.events.onInputUp.add(onButtonRelease,this);
 					
@@ -586,8 +529,6 @@
 					box.y = controlPanel.y + 80*sx;
 					box.inputEnabled=true;
 					box.frame = 0;
-					//console.log('Box height is '+box.height);
-					//console.log('Box width is '+box.width);
 					
 					// creating the groups to sort the moonrocks
 					onPanel=game.add.group();
@@ -600,9 +541,8 @@
 						
 						onPanel.create(panelCoordX[i], panelCoordY[i], objectname);
 					}
-					
-					
 					break;
+					
 				case CHARGE_SPACESHIP:
 					background.loadTexture('background');
 					background.anchor.setTo(0.5,0.5);
@@ -622,7 +562,6 @@
 					button.y = controlPanel.y+controlPanel.height-button.height-0.1*game.height;
 					button.frame=0;
 					button.visible = true;
-					//=-=-=-=-=-=-
 					button.inputEnabled=true;
 					button.events.onInputDown.add(onButtonPress,this);
 					button.events.onInputUp.add(onButtonRelease,this);
@@ -638,15 +577,10 @@
 					// battery tray
 					box.loadTexture('battery');
 					box.visible = true;
-					//box = game.add.sprite(0,0, 'battery');
 					box.frame = 0;
-					//box.anchor.setTo(0.5,0.5);
 					box.scale.setTo(0.8*sx,0.85*sy);
 					box.x = controlPanel.x + controlPanel.width - box.width - 200*sx;
 					box.y = controlPanel.y + controlPanel.height/2 - box.height/2;
-					//box.inputEnabled=true;
-					//box.alive = true;
-					//box.exist = true;
 					
 					for (var i=0;i<CRYSTAL_AMOUNT;i++){
 						objectname = "crystal" + game.rnd.integerInRange(1,5);
@@ -659,9 +593,9 @@
 			}
 		}
 		
-		function clearActivity(){// reset variables and groups
-			onPanel.removeAll(true,true,false);//ttt?? to delete the texture
-			onBox.removeAll(true,true,false);//ttt?? to delete the texture
+		function clearActivity(){// clears or resets sprites, variables, groups, and text
+			onPanel.removeAll(true,true,false);
+			onBox.removeAll(true,true,false);
 			box.kill();
 			controlPanel.kill();
 			button.kill();
@@ -675,9 +609,9 @@
 			panelCoordY = [];
 		}
 		
-		function initailizePhaserVariables(){
-			onPanel = game.add.group();
-			onBox = game.add.group();
+		function initailizeVariables(){
+			onPanel = game.add.group(); 
+			onBox = game.add.group();   
 			
 			background = game.add.sprite(game.world.centerX, game.world.centerY, null);
 			controlPanel = game.add.sprite(0,0,null);
@@ -693,11 +627,13 @@
 		}
 		
 		function changeActivity(){
-			//activity = CHARGE_SPACESHIP;//for quick debugging
 			activity++;
 			
-			//for testing switching back to PACK_MOONROCKS
+			//######################################
+			//for testing the switching back to the PACK_MOONROCKS activity
+			//delete/change this line when adding the otehr activities
 			if (activity == CHARGE_SPACESHIP+1) activity = PACK_MOONROCKS; //for debugging
+			//######################################
 			
 			if (activity > GAME1ACTIVITIES){
 				activity = PACK_MOONROCKS;
